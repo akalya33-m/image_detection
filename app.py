@@ -1,24 +1,41 @@
+
+
 import cv2
+import mediapipe as mp
 
-face_cascade = cv2.CascadeClassifier(
-    cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-)
+# Initialize MediaPipe
+mp_face_mesh = mp.solutions.face_mesh
+face_mesh = mp_face_mesh.FaceMesh(refine_landmarks=True)
 
-cap = cv2.VideoCapture(0)
+# Load image from system
+image_path = "face.jpg"   # 👉 change this to your image path
+frame = cv2.imread(image_path)
 
-while True:
-    ret, frame = cap.read()
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+# Check if image loaded
+if frame is None:
+    print("Error: Image not found")
+    exit()
 
-    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+# Convert to RGB
+rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    for (x, y, w, h) in faces:
-        cv2.rectangle(frame, (x,y), (x+w,y+h), (255,0,0), 2)
+# Process image
+results = face_mesh.process(rgb)
 
-    cv2.imshow("Face Detection", frame)
+# Draw landmarks
+if results.multi_face_landmarks:
+    for face_landmarks in results.multi_face_landmarks:
+        h, w, _ = frame.shape
 
-    if cv2.waitKey(1) & 0xFF == 27:
-        break
+        # Example feature points
+        points = [33, 133, 362, 263, 1, 13]  # eyes, nose, mouth
 
-cap.release()
+        for idx in points:
+            x = int(face_landmarks.landmark[idx].x * w)
+            y = int(face_landmarks.landmark[idx].y * h)
+            cv2.circle(frame, (x, y), 3, (0, 255, 0), -1)
+
+# Show output
+cv2.imshow("Face Detection (Image)", frame)
+cv2.waitKey(0)
 cv2.destroyAllWindows()
